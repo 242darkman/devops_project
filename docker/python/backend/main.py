@@ -1,11 +1,15 @@
+import uvicorn
+import configparser
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import create_engine, MetaData, Table, select, update
 from sqlalchemy.orm import sessionmaker, Session
-import uvicorn
+
+config = configparser.ConfigParser()
+config.read('properties/config.properties')
 
 app = FastAPI()
 
-DATABASE_URL = "mysql://user:password@localhost/iterator-db"
+DATABASE_URL = f"mysql://{config['DEFAULT']['DB_USER']}:{config['DEFAULT']['DB_PASSWORD']}@localhost/{config['DEFAULT']['DB_NAME']}"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -87,4 +91,4 @@ async def add_iterator(value: int, db: Session = Depends(get_db)):
     return {"status": "ok", "message": "Iterator value update successfully"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host=config['DEFAULT']['APP_HOST'], port=int(config['DEFAULT']['PORT']))
