@@ -69,5 +69,22 @@ async def get_iterator(db: Session = Depends(get_db)):
     """
     result = db.execute(select(iterator)).first()
     return {"status": "OK", "iterator": result[0] if result else "No value"}
+
+@app.post("/add", status_code=201)
+async def add_iterator(value: int, db: Session = Depends(get_db)):
+    """
+    Updates the state of an iterator in the database with the specified value.
+
+    Parameters:
+        value (int): The value to update the iterator state with.
+        db (Session, optional): The database session. Defaults to the result of the `get_db` dependency.
+
+    Returns:
+        dict: A dictionary with the status and message of the update operation.
+    """
+    db.execute(iterator.update().values(state=value))
+    db.commit()
+    return {"status": "ok", "message": "Iterator value update successfully"}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
