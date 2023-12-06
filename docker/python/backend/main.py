@@ -14,6 +14,7 @@ async def root():
     
     Returns:
         dict: A dictionary containing the message "Hello World"
+    """
     return {"message": "Hello World"}
 
 
