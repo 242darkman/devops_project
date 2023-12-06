@@ -46,6 +46,15 @@ async def say_hello(name: str):
     """
     return {"message": f"Hello {name}"}
 
+@app.get("/health")
+async def get_health():
+    """
+    A function that handles the GET request for the "/health" endpoint.
+
+    Returns:
+        A dictionary with the status of the API.
+    """
+    return {"status": "OK"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
