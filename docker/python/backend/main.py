@@ -56,5 +56,18 @@ async def get_health():
     """
     return {"status": "OK"}
 
+@app.get("/get")
+async def get_iterator(db: Session = Depends(get_db)):
+    """
+    Retrieves an iterator from the database.
+
+    Parameters:
+        db (Session): The database session object obtained from the dependency injection.
+
+    Returns:
+        dict: A dictionary containing the status of the operation and the retrieved iterator value. If no iterator is found, the value will be "No value".
+    """
+    result = db.execute(select(iterator)).first()
+    return {"status": "OK", "iterator": result[0] if result else "No value"}
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
