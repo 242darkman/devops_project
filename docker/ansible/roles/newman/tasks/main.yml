@@ -1,0 +1,4 @@
+- name: "Generate Newman configuration for test collection"
+  template:
+    src: int.postman_environment.json.j2
+    dest: "docker/newman/environments/int.postman_environment.json"

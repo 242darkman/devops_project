@@ -1,0 +1,5 @@
+- name: Environment creation
+  hosts: localhost
+  roles:
+    - newman
+    - api
