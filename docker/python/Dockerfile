@@ -4,8 +4,5 @@ WORKDIR /usr/src/app
 
 COPY backend/ ./
 
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir pymysql sqlalchemy && \
-    pip install --no-cache-dir uvicorn
-
-CMD [ "python", "main.py" ]
+# run the project
+CMD ["python", "main.py"]
