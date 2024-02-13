@@ -1,0 +1,7 @@
+- name: Creating the environment for the Python API
+  template:
+    src: config.properties.j2
+    dest: "C:\\University\\ESGI\\Master  2\\S1\\DevOps\\devops_project\\docker\\ansible\\roles\\api\\templates\\config.properties.j2"
+    owner: root
+    group: root
+    mode: '1777'

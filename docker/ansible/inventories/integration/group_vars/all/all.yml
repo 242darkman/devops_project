@@ -1,0 +1,12 @@
+services:
+  newman: 
+    name: newman:alpine
+    image: postman/newman:alpine
+  nginx:
+    name: nginx
+    port: 80
+
+  mysql:
+    name: mysql-8.2.0
+    image: mysql:8.2.0
+    port: 3306
