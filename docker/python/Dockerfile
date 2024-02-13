@@ -4,8 +4,9 @@ WORKDIR /usr/src/app
 
 COPY backend/ ./
 
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir pymysql sqlalchemy && \
-    pip install --no-cache-dir uvicorn
+RUN pip install mysql-connector-python
 
-CMD [ "python", "main.py" ]
+EXPOSE 8000
+
+# run the project
+CMD ["python", "main.py"]

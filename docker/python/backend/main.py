@@ -1,94 +1,73 @@
-import uvicorn
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+import mysql.connector
 import configparser
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy import create_engine, MetaData, Table, select, update
-from sqlalchemy.orm import sessionmaker, Session
 
 config = configparser.ConfigParser()
 config.read('properties/config.properties')
 
-app = FastAPI()
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
-DATABASE_URL = f"mysql://{config['DEFAULT']['DB_USER']}:{config['DEFAULT']['DB_PASSWORD']}@localhost/{config['DEFAULT']['DB_NAME']}"
+    def do_GET(self):
+        if self.path == '/health/' or self.path == "/health":
+            self.handle_health()
+        elif self.path == '/get/' or self.path == '/get':
+            self.handle_get()
+        else:
+            self.send_error(404)
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    def do_POST(self):
+        if self.path == '/add/' or self.path == '/add':
+            self.handle_add()
+        else:
+            self.send_error(404)
 
-metadata = MetaData()
-iterator = Table('iterator', metadata, autoload_with=engine)
+    def handle_health(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        health_check = {"status": "OK"}
+        self.wfile.write(json.dumps(health_check).encode('utf8'))
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    def handle_get(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        sql_connector = mysql.connector.connect(user=config['DEFAULT']['DB_USER'], password=config['DEFAULT']['DB_PASSWORD'], host='mariadb', database=config['DEFAULT']['DB_NAME'])
+        cursor = sql_connector.cursor()
+        query = ("SELECT * FROM interator")
+        cursor.execute(query)
+        iterators = []
+        for (state) in cursor:
+            entry = {"state": state}
+            iterators.append(entry)
+        response = {"status": "ok", "iterators": iterators}
+        self.wfile.write(json.dumps(response).encode('utf8'))
+        cursor.close()
+        sql_connector.close()
 
-@app.get("/")
-async def root():
-    """
-    This function is the root endpoint for the API.
+    def handle_add(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        data = json.loads(post_data)
+        value = data['value']
+        sql_connector = mysql.connector.connect(user='userIterator', password='qwerty1234', host='mariadb', database='iterator-db')
+        cursor = sql_connector.cursor()
+        query = ("INSERT INTO interator (state) VALUES (%s)")
+        cursor.execute(query, (value,))
+        sql_connector.commit()
+        response = {"status": "ok", "message": "Iterator value added successfully"}
+        self.wfile.write(json.dumps(response).encode('utf8'))
+        cursor.close()
+        sql_connector.close()
+
+def run(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler):
+    server_address = (config['DEFAULT']['APP_HOST'], int(config['DEFAULT']['PORT']))
+    httpd = server_class(server_address, handler_class)
+    httpd.serve_forever()
     
-    Parameters:
-        None
-    
-    Returns:
-        dict: A dictionary containing the message "Hello World"
-    """
-    return {"message": "Hello World"}
-
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    """
-    An asynchronous function that takes a string parameter `name` and returns a dictionary with a single key-value pair. 
-
-    Parameters:
-        name (str): The name to be included in the returned message.
-
-    Returns:
-        dict: A dictionary with the key "message" and the value "Hello {name}", where {name} is the input parameter.
-    """
-    return {"message": f"Hello {name}"}
-
-@app.get("/health")
-async def get_health():
-    """
-    A function that handles the GET request for the "/health" endpoint.
-
-    Returns:
-        A dictionary with the status of the API.
-    """
-    return {"status": "OK"}
-
-@app.get("/get")
-async def get_iterator(db: Session = Depends(get_db)):
-    """
-    Retrieves an iterator from the database.
-
-    Parameters:
-        db (Session): The database session object obtained from the dependency injection.
-
-    Returns:
-        dict: A dictionary containing the status of the operation and the retrieved iterator value. If no iterator is found, the value will be "No value".
-    """
-    result = db.execute(select(iterator)).first()
-    return {"status": "OK", "iterator": result[0] if result else "No value"}
-
-@app.post("/add", status_code=201)
-async def add_iterator(value: int, db: Session = Depends(get_db)):
-    """
-    Updates the state of an iterator in the database with the specified value.
-
-    Parameters:
-        value (int): The value to update the iterator state with.
-        db (Session, optional): The database session. Defaults to the result of the `get_db` dependency.
-
-    Returns:
-        dict: A dictionary with the status and message of the update operation.
-    """
-    db.execute(iterator.update().values(state=value))
-    db.commit()
-    return {"status": "ok", "message": "Iterator value update successfully"}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host=config['DEFAULT']['APP_HOST'], port=int(config['DEFAULT']['PORT']))
+if __name__ == '__main__':
+    run()
